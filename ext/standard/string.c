@@ -3547,6 +3547,51 @@ PHP_FUNCTION(strtr)
 }
 /* }}} */
 
+PHP_FUNCTION(mb_strrev)
+{
+    zend_string *str; 
+    const unsigned char *s;
+    unsigned char *e;
+    unsigned char *p;
+    zend_string *n; 
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+            Z_PARAM_STR(str)
+    ZEND_PARSE_PARAMETERS_END();
+
+    n = zend_string_alloc(ZSTR_LEN(str), 0); 
+    p = ZSTR_VAL(n); 
+    e = p + ZSTR_LEN(str); //pointer to the end of the new string
+
+    s = ZSTR_VAL(str);
+
+    *e-- = '\0';
+
+    while (e >= p) {
+        if (*s < 128) { //1 byte char       max 0b01111111
+            *e-- = *s++;
+        }else if(*s < 224) { //2 byte char  max 0b11011111
+            *e-- = *(s+1);
+            *e-- = *s;
+            s += 2;
+        } else if (*s < 240) { //3 byte     max 0b11101111
+            *e-- = *(s+2);
+            *e-- = *(s+1);
+            *e-- = *s;
+            s += 3;
+        } else { //4 byte                   max ob11110111
+            *e-- = *(s+3);
+            *e-- = *(s+2);
+            *e-- = *(s+1);
+            *e-- = *s;
+            s += 4;
+        }
+    }
+    
+    RETVAL_NEW_STR(n);
+}	
+	
+	
 /* {{{ proto string strrev(string str)
    Reverse a string */
 #if ZEND_INTRIN_SSSE3_NATIVE
